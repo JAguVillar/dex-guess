@@ -10,8 +10,8 @@ const routeName = computed(() => router.currentRoute.value.name)
 </script>
 
 <template>
-  <div class="flex flex-col h-screen">
-    <header
+  <div class="flex flex-col h-dvh">
+    <!-- <header
       class="flex h-16 shrink-0 items-center gap-3 px-6 bg-white border-b border-[#E2DFFE] shadow-[0_1px_3px_rgba(60,49,91,0.08)] cursor-pointer select-none"
       @click="router.push('/')"
     >
@@ -22,7 +22,7 @@ const routeName = computed(() => router.currentRoute.value.name)
           {{ routeName }}
         </span>
       </div>
-    </header>
+    </header> -->
     <main
       class="flex-1 overflow-auto p-6 transition-colors duration-500"
       :style="{ backgroundColor: bgColor }"

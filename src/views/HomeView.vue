@@ -62,17 +62,20 @@ function onOtpPaste(event) {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-8">
-    <!-- Branding -->
-    <div class="flex flex-col items-center gap-2 text-center">
-      <p class="text-4xl mb-1">🎯</p>
+  <div class="flex flex-col items-center min-h-full">
+    <!-- Branding (arriba) -->
+    <div class="flex flex-col items-center gap-2 text-center pt-4">
+      <p class="text-5xl mb-2">🎯</p>
       <h1 class="text-3xl font-bold text-[#3c315b] tracking-tight">DexGuess</h1>
       <p class="text-sm text-[#3c315b]/55 max-w-[260px] leading-relaxed">
         Adiviná el Pokémon por su entrada del Pokédex. ¡Jugá con tus amigos!
       </p>
     </div>
 
-    <!-- Botones principales -->
+    <!-- Spacer flexible (medio) -->
+    <div class="flex-1"></div>
+
+    <!-- Botones principales (abajo) -->
     <div v-if="!showJoinForm" class="flex flex-col gap-3 w-full max-w-[280px]">
       <button
         @click="crearSala"
@@ -88,7 +91,7 @@ function onOtpPaste(event) {
       </button>
     </div>
 
-    <!-- Formulario para unirse -->
+    <!-- Formulario para unirse (abajo) -->
     <div v-else class="flex flex-col items-center gap-5 w-full max-w-[280px]">
       <div class="flex flex-col items-center gap-1 text-center">
         <p class="text-sm font-semibold text-[#3c315b]">Ingresá el código de sala</p>

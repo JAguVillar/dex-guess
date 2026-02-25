@@ -143,16 +143,22 @@ async function triggerBounce() {
               class="w-full px-3 py-2.5 border-b border-[#c4b8f5]/60 text-sm text-[#3c315b] placeholder:text-[#3c315b]/40 focus:outline-none"
             />
             <div class="max-h-48 overflow-y-auto">
-              <p v-if="search && filtered.length === 0" class="px-3 py-2.5 text-sm text-[#3c315b]/50">
+              <p
+                v-if="search && filtered.length === 0"
+                class="px-3 py-2.5 text-sm text-[#3c315b]/50"
+              >
                 No se encontró ningún Pokémon.
               </p>
               <button
                 v-for="p in filtered"
                 :key="p.id"
                 @click="onSelect(p)"
-                class="w-full flex items-center px-3 py-2.5 text-sm text-[#3c315b] hover:bg-[#e2dffe] transition-colors text-left"
+                class="w-full flex items-center py-2.5 text-sm text-[#3c315b] hover:bg-[#e2dffe] transition-colors text-left gap-2"
               >
-                {{ p.displayName }}
+                <img :src="p.sprite" alt="" class="w-10 h-10" />
+                <span>
+                  {{ p.displayName }}
+                </span>
                 <svg
                   v-if="selected?.id === p.id"
                   class="ml-auto w-4 h-4 text-[#7c6fd4] shrink-0"
@@ -184,7 +190,9 @@ async function triggerBounce() {
 
     <!-- Resultado -->
     <div v-else class="flex flex-col items-center gap-4 text-center w-full max-w-[280px]">
-      <div class="bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-6 py-6 w-full flex flex-col items-center gap-3">
+      <div
+        class="bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-6 py-6 w-full flex flex-col items-center gap-3"
+      >
         <img
           v-if="pokemon?.sprite"
           :src="pokemon.sprite"

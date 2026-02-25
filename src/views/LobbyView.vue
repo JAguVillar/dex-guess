@@ -25,10 +25,17 @@ function confirmarNombre() {
   nameConfirmed.value = true
 
   if (peerStore.isHost) {
-    gameStore.addPlayer({ id: peerStore.myId, name: playerName.value })
+    gameStore.addPlayer({
+      id: peerStore.myId,
+      name: playerName.value,
+      avatar: peerStore.avatarUrl,
+    })
     startHosting()
   } else {
-    joinGame(hostId, { name: playerName.value })
+    joinGame(hostId, {
+      name: playerName.value,
+      avatar: peerStore.avatarUrl,
+    })
   }
 }
 
@@ -57,6 +64,14 @@ const puedeIniciar = computed(() => gameStore.players.length >= 2)
   <div class="flex flex-col items-center justify-center h-full gap-6">
     <!-- PASO 1: Elegir nombre -->
     <div v-if="!nameConfirmed" class="flex flex-col gap-4 w-full max-w-[280px]">
+      <div class="flex justify-center">
+        <img
+          :src="peerStore.avatarUrl"
+          alt=""
+          class="w-28 h-28 rounded-full cursor-pointer active:scale-90 transition-transform duration-150"
+          @click="peerStore.randomizeAvatar()"
+        />
+      </div>
       <h2 class="text-xl font-bold text-center text-[#e2dffe]">¿Cómo te llamás?</h2>
       <input
         v-model="playerName"
@@ -73,7 +88,7 @@ const puedeIniciar = computed(() => gameStore.players.length >= 2)
     </div>
 
     <!-- PASO 2: Sala de espera -->
-    <div v-else class="flex flex-col gap-5 w-full max-w-[280px]">
+    <div v-else class="flex flex-col gap-5 w-full max-w-70">
       <!-- Código del host -->
       <div
         v-if="peerStore.isHost"
@@ -98,7 +113,7 @@ const puedeIniciar = computed(() => gameStore.players.length >= 2)
             :key="player.id"
             class="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 bg-[#28282c] border border-[#ab9ff2]/15"
           >
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+            <img :src="player.avatar" alt="" class="w-8 h-8 rounded-full" />
             <span class="text-sm font-medium text-[#e2dffe]">{{ player.name }}</span>
             <span v-if="player.id === peerStore.myId" class="text-xs text-[#e2dffe]/35 ml-auto">
               (tú)

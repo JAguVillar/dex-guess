@@ -30,6 +30,7 @@ export const useGameStore = defineStore('game', () => {
     if (!players.value.find((p) => p.id === player.id)) {
       players.value.push(player)
     }
+    console.log(players.value)
   }
 
   function removePlayer(id) {
