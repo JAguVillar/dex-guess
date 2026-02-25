@@ -11,21 +11,25 @@ const router = createRouter({
       path: '/',
       name: 'Inicio',
       component: HomeView,
+      meta: { bgColor: '#E2DFFE' },
     },
     {
       path: '/rooms',
       name: 'Salas',
       component: RoomsView,
+      meta: { bgColor: '#DFEEFF' },
     },
     {
       path: '/lobby',
       name: 'Lobby',
       component: LobbyView,
+      meta: { bgColor: '#3c315b' },
     },
     {
       path: '/game',
       name: 'Juego',
       component: GameView,
+      meta: { bgColor: '#E2FFE9' },
     },
     // {
     //   path: '/about',

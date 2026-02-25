@@ -5,17 +5,6 @@ import { usePeerStore } from '@/stores/peerStore'
 import { useGameStore } from '@/stores/gameStore'
 import { useHost } from '@/composables/useHost'
 import { useClient } from '@/composables/useClient'
-import { Button } from '@/components/ui/button'
-import { Check, ChevronsUpDown } from 'lucide-vue-next'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import Pokemons from '@/assets/pokemon-compact.json'
 
 const router = useRouter()
@@ -44,9 +33,25 @@ const filtered = computed(() => {
   return Pokemons.filter((p) => p.displayName.toLowerCase().includes(term)).slice(0, 10)
 })
 
+function toggleDropdown() {
+  open.value = !open.value
+  if (open.value) {
+    nextTick(() => {
+      document.querySelector('#pokemon-search')?.focus()
+    })
+  }
+}
+
 function onSelect(p) {
   selected.value = p
   open.value = false
+  search.value = ''
+}
+
+function onClickOutside(event) {
+  if (!event.target.closest('#pokemon-dropdown')) {
+    open.value = false
+  }
 }
 
 function enviarRespuesta() {
@@ -75,12 +80,12 @@ async function triggerBounce() {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-6">
+  <div class="flex flex-col items-center justify-center h-full gap-6" @click="onClickOutside">
     <!-- Jugando -->
     <div v-if="!finished" class="flex flex-col items-center gap-4 w-80">
       <h2 class="text-xl font-bold text-center">¿Quién es ese Pokémon?</h2>
 
-      <p class="text-sm text-muted-foreground">
+      <p class="text-sm text-gray-500">
         Jugadores: {{ gameStore.players.map((p) => p.name).join(', ') }}
       </p>
 
@@ -89,49 +94,68 @@ async function triggerBounce() {
       <!-- Ya respondió, esperando al resto -->
       <div v-if="alreadyAnswered" class="text-center">
         <p class="font-bold">¡Respuesta enviada!</p>
-        <p class="text-sm text-muted-foreground">
+        <p class="text-sm text-gray-500">
           Esperando al resto ({{ answeredCount }}/{{ gameStore.players.length }})...
         </p>
       </div>
 
       <!-- Todavía puede responder -->
       <template v-else>
-        <Popover v-model:open="open">
-          <PopoverTrigger as-child>
-            <Button
-              variant="outline"
-              role="combobox"
-              :aria-expanded="open"
-              class="w-full justify-between"
-            >
+        <div id="pokemon-dropdown" class="relative w-full">
+          <button
+            @click="toggleDropdown"
+            class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+          >
+            <span :class="selected ? 'text-gray-900' : 'text-gray-500'">
               {{ selected ? selected.displayName : 'Elegí un Pokémon...' }}
-              <ChevronsUpDown class="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent class="w-80 p-0">
-            <Command>
-              <CommandInput v-model="search" placeholder="Buscar pokémon..." />
-              <CommandEmpty>No se encontró ningún Pokémon.</CommandEmpty>
-              <CommandList>
-                <CommandGroup>
-                  <CommandItem
-                    v-for="p in filtered"
-                    :key="p.id"
-                    :value="p.name"
-                    @select="onSelect(p)"
-                  >
-                    {{ p.displayName }}
-                    <Check v-if="selected?.id === p.id" class="ml-auto h-4 w-4" />
-                  </CommandItem>
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+            </span>
+            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10l5 5 5-5" />
+            </svg>
+          </button>
 
-        <Button @click="enviarRespuesta" :disabled="!selected" class="w-full">
+          <div
+            v-if="open"
+            class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+          >
+            <input
+              id="pokemon-search"
+              v-model="search"
+              placeholder="Buscar pokémon..."
+              class="w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none"
+            />
+            <div class="max-h-48 overflow-y-auto">
+              <p v-if="search && filtered.length === 0" class="px-3 py-2 text-sm text-gray-500">
+                No se encontró ningún Pokémon.
+              </p>
+              <button
+                v-for="p in filtered"
+                :key="p.id"
+                @click="onSelect(p)"
+                class="w-full flex items-center px-3 py-2 text-sm hover:bg-gray-100 transition-colors text-left"
+              >
+                {{ p.displayName }}
+                <svg
+                  v-if="selected?.id === p.id"
+                  class="ml-auto w-4 h-4 text-gray-900"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
+          @click="enviarRespuesta"
+          :disabled="!selected"
+          class="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
           Enviar respuesta
-        </Button>
+        </button>
       </template>
     </div>
 
@@ -154,7 +178,12 @@ async function triggerBounce() {
         <p class="text-4xl">😵</p>
         <h2 class="text-2xl font-bold">¡Nadie adivinó!</h2>
       </template>
-      <Button @click="volverAlInicio" class="w-48 mt-4">Volver al inicio</Button>
+      <button
+        @click="volverAlInicio"
+        class="w-48 mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+      >
+        Volver al inicio
+      </button>
     </div>
   </div>
 </template>
