@@ -56,62 +56,73 @@ const puedeIniciar = computed(() => gameStore.players.length >= 2)
 <template>
   <div class="flex flex-col items-center justify-center h-full gap-6">
     <!-- PASO 1: Elegir nombre -->
-    <div v-if="!nameConfirmed" class="flex flex-col gap-4 w-72">
-      <h2 class="text-xl font-bold text-center text-[#fffdf8]">¿Cómo te llamás?</h2>
+    <div v-if="!nameConfirmed" class="flex flex-col gap-4 w-full max-w-[280px]">
+      <h2 class="text-xl font-bold text-center text-[#e2dffe]">¿Cómo te llamás?</h2>
       <input
         v-model="playerName"
-        placeholder="Tu nombre"
+        placeholder="Tu nombre..."
         @keyup.enter="confirmarNombre"
-        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-400 text-[#E2DFFE]"
+        class="w-full px-3 py-2.5 bg-[#28282c] border border-[#ab9ff2]/30 rounded-xl text-sm text-[#e2dffe] placeholder:text-[#e2dffe]/35 focus:outline-none focus:ring-2 focus:ring-[#ab9ff2]/40 focus:border-[#ab9ff2] transition-all duration-200"
       />
       <button
         @click="confirmarNombre"
-        class="w-full px-4 py-2 bg-[#E2DFFE] text-[#3c315b] rounded-xl text-sm font-semibold hover:bg-[#AB9FF2] hover:scale-95 transition-all duration-300 ease-out"
+        class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#ab9ff2] text-[#3c315b] hover:bg-[#e2dffe] active:scale-95 transition-all duration-200"
       >
         Confirmar
       </button>
     </div>
 
     <!-- PASO 2: Sala de espera -->
-    <div v-else class="flex flex-col gap-6 w-full">
-      <div v-if="peerStore.isHost" class="text-center">
-        <p class="text-sm text-gray-500">Compartí este código</p>
-        <p class="text-2xl font-mono font-bold tracking-widest mt-1">{{ peerStore.myId }}</p>
+    <div v-else class="flex flex-col gap-5 w-full max-w-[280px]">
+      <!-- Código del host -->
+      <div
+        v-if="peerStore.isHost"
+        class="text-center bg-[#28282c] border border-[#ab9ff2]/20 rounded-2xl px-4 py-4"
+      >
+        <p class="text-[10px] font-medium text-[#e2dffe]/50 uppercase tracking-widest mb-2">
+          Compartí este código
+        </p>
+        <p class="text-3xl font-mono font-bold tracking-[0.2em] text-[#ab9ff2]">
+          {{ peerStore.myId }}
+        </p>
       </div>
 
+      <!-- Lista de jugadores -->
       <div>
-        <p class="text-sm text-gray-500 mb-2">Jugadores ({{ gameStore.players.length }})</p>
+        <p class="text-[10px] font-medium text-[#e2dffe]/50 uppercase tracking-widest mb-2">
+          Jugadores ({{ gameStore.players.length }})
+        </p>
         <ul class="flex flex-col gap-2 w-full">
           <li
             v-for="player in gameStore.players"
             :key="player.id"
-            class="w-full flex items-center gap-2 rounded-lg px-3 py-2 bg-[#28282c]"
+            class="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 bg-[#28282c] border border-[#ab9ff2]/15"
           >
-            <span class="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-            <span class="text-[#fffdf8]">
-              {{ player.name }}
-            </span>
-            <span v-if="player.id === peerStore.myId" class="text-xs text-gray-500 ml-auto">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />
+            <span class="text-sm font-medium text-[#e2dffe]">{{ player.name }}</span>
+            <span v-if="player.id === peerStore.myId" class="text-xs text-[#e2dffe]/35 ml-auto">
               (tú)
             </span>
           </li>
         </ul>
       </div>
 
+      <!-- Botón iniciar (solo host) -->
       <div v-if="peerStore.isHost">
         <button
           @click="iniciarJuego"
           :disabled="!puedeIniciar"
-          class="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#ab9ff2] text-[#3c315b] hover:bg-[#e2dffe] active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
         >
           Iniciar juego
         </button>
-        <p v-if="!puedeIniciar" class="text-xs text-gray-500 text-center mt-2">
+        <p v-if="!puedeIniciar" class="text-xs text-[#e2dffe]/45 text-center mt-2">
           Necesitás al menos 2 jugadores
         </p>
       </div>
 
-      <div v-else class="text-center text-sm text-gray-500">
+      <!-- Esperando (no host) -->
+      <div v-else class="text-center text-sm text-[#e2dffe]/50">
         Esperando que el host inicie la partida...
       </div>
     </div>

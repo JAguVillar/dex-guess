@@ -82,20 +82,28 @@ async function triggerBounce() {
 <template>
   <div class="flex flex-col items-center justify-center h-full gap-6" @click="onClickOutside">
     <!-- Jugando -->
-    <div v-if="!finished" class="flex flex-col items-center gap-4 w-80">
-      <h2 class="text-xl font-bold text-center">¿Quién es ese Pokémon?</h2>
+    <div v-if="!finished" class="flex flex-col items-center gap-4 w-full max-w-[300px]">
+      <h2 class="text-xl font-bold text-center text-[#3c315b]">¿Quién es ese Pokémon?</h2>
 
-      <p class="text-sm text-gray-500">
-        Jugadores: {{ gameStore.players.map((p) => p.name).join(', ') }}
+      <p class="text-xs text-[#3c315b]/50 text-center">
+        {{ gameStore.players.map((p) => p.name).join(' · ') }}
       </p>
 
-      <p class="text-sm text-center italic">{{ pokemon?.dexEntry }}</p>
+      <!-- Entrada del Pokédex -->
+      <div class="w-full bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-4 py-4">
+        <p class="text-sm text-center italic leading-relaxed text-[#3c315b]/75">
+          {{ pokemon?.dexEntry }}
+        </p>
+      </div>
 
       <!-- Ya respondió, esperando al resto -->
-      <div v-if="alreadyAnswered" class="text-center">
-        <p class="font-bold">¡Respuesta enviada!</p>
-        <p class="text-sm text-gray-500">
-          Esperando al resto ({{ answeredCount }}/{{ gameStore.players.length }})...
+      <div
+        v-if="alreadyAnswered"
+        class="w-full text-center bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-4 py-4"
+      >
+        <p class="font-bold text-[#3c315b]">¡Respuesta enviada!</p>
+        <p class="text-sm text-[#3c315b]/55 mt-1">
+          Esperando... ({{ answeredCount }}/{{ gameStore.players.length }})
         </p>
       </div>
 
@@ -103,46 +111,61 @@ async function triggerBounce() {
       <template v-else>
         <div id="pokemon-dropdown" class="relative w-full">
           <button
-            @click="toggleDropdown"
-            class="w-full flex items-center justify-between px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+            @click.stop="toggleDropdown"
+            class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-[#c4b8f5] rounded-xl text-sm hover:border-[#7c6fd4] transition-all duration-200"
           >
-            <span :class="selected ? 'text-gray-900' : 'text-gray-500'">
+            <span :class="selected ? 'text-[#3c315b] font-medium' : 'text-[#3c315b]/40'">
               {{ selected ? selected.displayName : 'Elegí un Pokémon...' }}
             </span>
-            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 10l5 5 5-5" />
+            <svg
+              class="w-4 h-4 text-[#3c315b]/35 shrink-0"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M7 10l5 5 5-5"
+              />
             </svg>
           </button>
 
           <div
             v-if="open"
-            class="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden"
+            class="absolute z-50 mt-1 w-full bg-white border border-[#c4b8f5] rounded-xl shadow-lg shadow-[#3c315b]/10 overflow-hidden"
           >
             <input
               id="pokemon-search"
               v-model="search"
               placeholder="Buscar pokémon..."
-              class="w-full px-3 py-2 border-b border-gray-200 text-sm focus:outline-none"
+              class="w-full px-3 py-2.5 border-b border-[#c4b8f5]/60 text-sm text-[#3c315b] placeholder:text-[#3c315b]/40 focus:outline-none"
             />
             <div class="max-h-48 overflow-y-auto">
-              <p v-if="search && filtered.length === 0" class="px-3 py-2 text-sm text-gray-500">
+              <p v-if="search && filtered.length === 0" class="px-3 py-2.5 text-sm text-[#3c315b]/50">
                 No se encontró ningún Pokémon.
               </p>
               <button
                 v-for="p in filtered"
                 :key="p.id"
                 @click="onSelect(p)"
-                class="w-full flex items-center px-3 py-2 text-sm hover:bg-gray-100 transition-colors text-left"
+                class="w-full flex items-center px-3 py-2.5 text-sm text-[#3c315b] hover:bg-[#e2dffe] transition-colors text-left"
               >
                 {{ p.displayName }}
                 <svg
                   v-if="selected?.id === p.id"
-                  class="ml-auto w-4 h-4 text-gray-900"
+                  class="ml-auto w-4 h-4 text-[#7c6fd4] shrink-0"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               </button>
             </div>
@@ -152,7 +175,7 @@ async function triggerBounce() {
         <button
           @click="enviarRespuesta"
           :disabled="!selected"
-          class="w-full px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none"
         >
           Enviar respuesta
         </button>
@@ -160,27 +183,31 @@ async function triggerBounce() {
     </div>
 
     <!-- Resultado -->
-    <div v-else class="flex flex-col items-center gap-4 text-center">
-      <img
-        v-if="pokemon?.sprite"
-        :src="pokemon.sprite"
-        :class="['w-32 h-32 cursor-pointer', { bounce: bouncing }]"
-        @click="triggerBounce"
-        @touchstart.prevent="triggerBounce"
-        @animationend="bouncing = false"
-      />
-      <p class="text-lg font-bold">{{ pokemon?.displayName }}</p>
+    <div v-else class="flex flex-col items-center gap-4 text-center w-full max-w-[280px]">
+      <div class="bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-6 py-6 w-full flex flex-col items-center gap-3">
+        <img
+          v-if="pokemon?.sprite"
+          :src="pokemon.sprite"
+          :class="['w-28 h-28 cursor-pointer drop-shadow-md', { bounce: bouncing }]"
+          @click="triggerBounce"
+          @touchstart.prevent="triggerBounce"
+          @animationend="bouncing = false"
+        />
+        <p class="text-lg font-bold text-[#3c315b]">{{ pokemon?.displayName }}</p>
+      </div>
+
       <template v-if="winner">
         <p class="text-4xl">🏆</p>
-        <h2 class="text-2xl font-bold">{{ winner.name }} ganó!</h2>
+        <h2 class="text-2xl font-bold text-[#3c315b]">{{ winner.name }} ganó!</h2>
       </template>
       <template v-else>
         <p class="text-4xl">😵</p>
-        <h2 class="text-2xl font-bold">¡Nadie adivinó!</h2>
+        <h2 class="text-2xl font-bold text-[#3c315b]">¡Nadie adivinó!</h2>
       </template>
+
       <button
         @click="volverAlInicio"
-        class="w-48 mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
+        class="w-full mt-1 px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30"
       >
         Volver al inicio
       </button>

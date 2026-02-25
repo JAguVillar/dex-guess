@@ -62,48 +62,67 @@ function onOtpPaste(event) {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-4">
-    <div v-if="!showJoinForm" class="flex flex-col gap-4 w-full">
+  <div class="flex flex-col items-center justify-center h-full gap-8">
+    <!-- Branding -->
+    <div class="flex flex-col items-center gap-2 text-center">
+      <p class="text-4xl mb-1">🎯</p>
+      <h1 class="text-3xl font-bold text-[#3c315b] tracking-tight">DexGuess</h1>
+      <p class="text-sm text-[#3c315b]/55 max-w-[260px] leading-relaxed">
+        Adiviná el Pokémon por su entrada del Pokédex. ¡Jugá con tus amigos!
+      </p>
+    </div>
+
+    <!-- Botones principales -->
+    <div v-if="!showJoinForm" class="flex flex-col gap-3 w-full max-w-[280px]">
       <button
         @click="crearSala"
-        class="w-full px-4 py-2 rounded-xl text-sm font-semibold bg-[#AB9FF2] hover:bg-[#E2DFFE] hover:scale-95 transition-all duration-300 ease-out"
+        class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30"
       >
-        Crear sala (Host)
+        Crear sala
       </button>
       <button
         @click="irAUnirse"
-        class="w-full px-4 py-2 rounded-xl text-sm font-semibold bg-[#AB9FF2] hover:bg-[#E2DFFE] hover:scale-95 transition-all duration-300 ease-out"
+        class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-white text-[#3c315b] border border-[#c4b8f5] hover:bg-[#e2dffe] active:scale-95 transition-all duration-200"
       >
         Unirse a sala
       </button>
     </div>
 
-    <div v-else class="flex flex-col items-center gap-4">
-      <div class="flex gap-2 justify-center" @paste="onOtpPaste">
+    <!-- Formulario para unirse -->
+    <div v-else class="flex flex-col items-center gap-5 w-full max-w-[280px]">
+      <div class="flex flex-col items-center gap-1 text-center">
+        <p class="text-sm font-semibold text-[#3c315b]">Ingresá el código de sala</p>
+        <p class="text-xs text-[#3c315b]/50">Pedíselo al host</p>
+      </div>
+
+      <div class="flex gap-3 justify-center" @paste="onOtpPaste">
         <input
           v-for="i in 4"
           :key="i"
           :ref="(el) => (inputs[i - 1] = el)"
           type="text"
           maxlength="1"
-          class="w-12 h-12 text-center text-lg font-mono font-bold border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400 uppercase"
+          class="w-12 h-12 text-center text-lg font-mono font-bold bg-white border-2 border-[#c4b8f5] rounded-xl text-[#3c315b] focus:outline-none focus:ring-2 focus:ring-[#7c6fd4]/30 focus:border-[#7c6fd4] uppercase transition-all duration-200"
           inputmode="text"
           @input="onOtpInput(i - 1, $event)"
           @keydown="onOtpKeydown(i - 1, $event)"
         />
       </div>
-      <button
-        @click="unirse"
-        class="w-48 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 hover:scale-95 transition-transform"
-      >
-        Unirse
-      </button>
-      <button
-        @click="showJoinForm = false"
-        class="w-48 px-4 py-2 text-sm font-medium hover:bg-gray-100 rounded-lg transition-colors"
-      >
-        Volver
-      </button>
+
+      <div class="flex flex-col gap-2 w-full">
+        <button
+          @click="unirse"
+          class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30"
+        >
+          Unirse
+        </button>
+        <button
+          @click="showJoinForm = false"
+          class="w-full px-4 py-2.5 rounded-xl text-sm font-medium text-[#3c315b]/55 hover:text-[#3c315b] hover:bg-[#3c315b]/[0.06] transition-all duration-200"
+        >
+          Volver
+        </button>
+      </div>
     </div>
   </div>
 </template>

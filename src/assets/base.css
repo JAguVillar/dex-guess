@@ -36,6 +36,17 @@
   --color-text: var(--vt-c-text-light-1);
 
   --section-gap: 160px;
+
+  /* Design system tokens */
+  --c-primary: #7c6fd4;
+  --c-primary-hover: #6558c0;
+  --c-primary-light: #ab9ff2;
+  --c-primary-lighter: #e2dffe;
+  --c-dark: #3c315b;
+  --c-dark-surface: #28282c;
+  --c-dark-border: rgba(171, 159, 242, 0.25);
+  --c-light-text: #e2dffe;
+  --c-border-light: #c4b8f5;
 }
 
 /* @media (prefers-color-scheme: dark) {
