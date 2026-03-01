@@ -15,34 +15,27 @@ const gameStore = useGameStore()
 const playerName = ref('')
 const nameConfirmed = ref(false)
 const hostId = route.query.hostId ?? null
+const roundOptions = [1, 2, 3, 4, 5]
 
-const { startHosting, broadcast, hostAction } = useHost(peerStore, gameStore)
-const { joinGame, sendAction } = useClient(peerStore, gameStore)
+const { startHosting, broadcast } = useHost(peerStore, gameStore)
+const { joinGame } = useClient(peerStore, gameStore)
 
 function confirmarNombre() {
   if (!playerName.value.trim()) return
-
   nameConfirmed.value = true
 
   if (peerStore.isHost) {
-    gameStore.addPlayer({
-      id: peerStore.myId,
-      name: playerName.value,
-      avatar: peerStore.avatarUrl,
-    })
+    gameStore.addPlayer({ id: peerStore.myId, name: playerName.value, avatar: peerStore.avatarUrl, avatarId: peerStore.avatarId })
     startHosting()
   } else {
-    joinGame(hostId, {
-      name: playerName.value,
-      avatar: peerStore.avatarUrl,
-    })
+    joinGame(hostId, { name: playerName.value, avatar: peerStore.avatarUrl, avatarId: peerStore.avatarId })
   }
 }
 
 function iniciarJuego() {
-  const random = Pokemons[Math.floor(Math.random() * Pokemons.length)]
-  gameStore.setPokemon(random)
   gameStore.startGame()
+  const random = Pokemons[Math.floor(Math.random() * Pokemons.length)]
+  gameStore.startRound(random)
   broadcast({ type: 'GAME_START', state: gameStore.state })
   router.push('/game')
 }
@@ -61,85 +54,113 @@ const puedeIniciar = computed(() => gameStore.players.length >= 2)
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-6">
-    <!-- PASO 1: Elegir nombre -->
-    <div v-if="!nameConfirmed" class="flex flex-col gap-4 w-full max-w-[280px]">
-      <div class="flex justify-center">
-        <img
-          :src="peerStore.avatarUrl"
-          alt=""
-          class="w-28 h-28 rounded-full cursor-pointer active:scale-90 transition-transform duration-150"
-          @click="peerStore.randomizeAvatar()"
-        />
-      </div>
-      <h2 class="text-xl font-bold text-center text-[#e2dffe]">¿Cómo te llamás?</h2>
+  <div class="flex flex-col items-center min-h-full">
+    <!-- Avatar selector (solo antes de confirmar nombre) -->
+    <div v-if="!nameConfirmed" class="flex-1 flex items-end justify-center pb-4">
+      <img
+        :src="peerStore.avatarUrl"
+        alt=""
+        class="w-28 h-28 rounded-full cursor-pointer active:scale-90 transition-transform duration-150"
+        @click="peerStore.randomizeAvatar()"
+      />
+    </div>
+
+    <!-- Spacer cuando está en espera -->
+    <div v-else class="flex-1" />
+
+    <!-- Paso 1: Nombre -->
+    <div v-if="!nameConfirmed" class="flex flex-col gap-4 w-72">
+      <h2 class="text-xl font-bold text-center text-white">¿Cómo te llamás?</h2>
       <input
         v-model="playerName"
-        placeholder="Tu nombre..."
+        placeholder="Tu nombre"
         @keyup.enter="confirmarNombre"
-        class="w-full px-3 py-2.5 bg-[#28282c] border border-[#ab9ff2]/30 rounded-xl text-sm text-[#e2dffe] placeholder:text-[#e2dffe]/35 focus:outline-none focus:ring-2 focus:ring-[#ab9ff2]/40 focus:border-[#ab9ff2] transition-all duration-200"
+        class="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white"
       />
       <button
         @click="confirmarNombre"
-        class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#ab9ff2] text-[#3c315b] hover:bg-[#e2dffe] active:scale-95 transition-all duration-200"
+        class="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition"
       >
         Confirmar
       </button>
     </div>
 
-    <!-- PASO 2: Sala de espera -->
-    <div v-else class="flex flex-col gap-5 w-full max-w-70">
-      <!-- Código del host -->
-      <div
-        v-if="peerStore.isHost"
-        class="text-center bg-[#28282c] border border-[#ab9ff2]/20 rounded-2xl px-4 py-4"
-      >
-        <p class="text-[10px] font-medium text-[#e2dffe]/50 uppercase tracking-widest mb-2">
-          Compartí este código
-        </p>
-        <p class="text-3xl font-mono font-bold tracking-[0.2em] text-[#ab9ff2]">
+    <!-- Paso 2: Sala de espera -->
+    <div v-else class="flex flex-col gap-6 w-72">
+      <!-- Código de sala -->
+      <div v-if="peerStore.isHost" class="text-center">
+        <p class="text-sm text-zinc-400">Compartí este código</p>
+        <p class="text-2xl font-mono font-bold tracking-widest mt-1 text-white">
           {{ peerStore.myId }}
         </p>
       </div>
 
       <!-- Lista de jugadores -->
       <div>
-        <p class="text-[10px] font-medium text-[#e2dffe]/50 uppercase tracking-widest mb-2">
-          Jugadores ({{ gameStore.players.length }})
-        </p>
-        <ul class="flex flex-col gap-2 w-full">
+        <p class="text-sm text-zinc-400 mb-2">Jugadores ({{ gameStore.players.length }})</p>
+        <ul class="flex flex-col gap-2">
           <li
             v-for="player in gameStore.players"
             :key="player.id"
-            class="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 bg-[#28282c] border border-[#ab9ff2]/15"
+            class="flex items-center gap-2 border border-zinc-700 rounded-lg px-3 py-2 text-white"
           >
-            <img :src="player.avatar" alt="" class="w-8 h-8 rounded-full" />
-            <span class="text-sm font-medium text-[#e2dffe]">{{ player.name }}</span>
-            <span v-if="player.id === peerStore.myId" class="text-xs text-[#e2dffe]/35 ml-auto">
-              (tú)
-            </span>
+            <div class="flex items-center gap-2">
+              <img class="w-8 h-8 rounded-full" :src="player.avatar" alt="" />
+              <span>
+                {{ player.name }}
+              </span>
+              <span v-if="player.id === peerStore.myId" class="text-xs text-zinc-500 ml-auto"
+                >(tú)</span
+              >
+            </div>
           </li>
         </ul>
       </div>
 
-      <!-- Botón iniciar (solo host) -->
-      <div v-if="peerStore.isHost">
+      <!-- Config + Iniciar (host) -->
+      <div v-if="peerStore.isHost" class="flex flex-col gap-3">
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-zinc-400">Rondas:</span>
+          <div class="flex gap-2">
+            <button
+              v-for="n in roundOptions"
+              :key="n"
+              @click="gameStore.setTotalRounds(n)"
+              :class="[
+                'px-3 py-1 text-sm rounded-lg transition',
+                gameStore.totalRounds === n
+                  ? 'bg-white text-black'
+                  : 'border border-zinc-600 text-zinc-400 hover:text-white',
+              ]"
+            >
+              {{ n }}
+            </button>
+          </div>
+        </div>
+
         <button
           @click="iniciarJuego"
           :disabled="!puedeIniciar"
-          class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#ab9ff2] text-[#3c315b] hover:bg-[#e2dffe] active:scale-95 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+          :class="[
+            'w-full px-4 py-2 rounded-lg font-medium transition',
+            puedeIniciar
+              ? 'bg-white text-black hover:bg-zinc-200'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed',
+          ]"
         >
           Iniciar juego
         </button>
-        <p v-if="!puedeIniciar" class="text-xs text-[#e2dffe]/45 text-center mt-2">
+        <p v-if="!puedeIniciar" class="text-xs text-zinc-500 text-center">
           Necesitás al menos 2 jugadores
         </p>
       </div>
 
-      <!-- Esperando (no host) -->
-      <div v-else class="text-center text-sm text-[#e2dffe]/50">
+      <div v-else class="text-center text-sm text-zinc-400">
         Esperando que el host inicie la partida...
       </div>
     </div>
+
+    <!-- Spacer abajo -->
+    <div class="flex-1" />
   </div>
 </template>

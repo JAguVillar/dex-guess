@@ -15,48 +15,35 @@ const { broadcast, hostAction } = useHost(peerStore, gameStore)
 const { sendAction } = useClient(peerStore, gameStore)
 
 const search = ref('')
-const open = ref(false)
+const dropdownOpen = ref(false)
 const selected = ref(null)
-const sent = ref(false)
 const bouncing = ref(false)
 
 const isHost = computed(() => peerStore.isHost)
-const pokemon = computed(() => gameStore.pokemon)
-const winner = computed(() => gameStore.winner)
-const finished = computed(() => gameStore.status === 'finished')
 const myId = computed(() => peerStore.myId)
+const pokemon = computed(() => gameStore.pokemon)
 const alreadyAnswered = computed(() => !!gameStore.answers[myId.value])
 const answeredCount = computed(() => Object.keys(gameStore.answers).length)
+const isPlaying = computed(() => gameStore.status === 'playing')
+const isRoundResult = computed(() => gameStore.status === 'round_result')
+const isFinished = computed(() => gameStore.status === 'finished')
+
 const filtered = computed(() => {
   if (!search.value) return []
   const term = search.value.toLowerCase()
   return Pokemons.filter((p) => p.displayName.toLowerCase().includes(term)).slice(0, 10)
 })
 
-function toggleDropdown() {
-  open.value = !open.value
-  if (open.value) {
-    nextTick(() => {
-      document.querySelector('#pokemon-search')?.focus()
-    })
-  }
-}
+const scoreboard = computed(() => [...gameStore.players].sort((a, b) => b.score - a.score))
 
 function onSelect(p) {
   selected.value = p
-  open.value = false
-  search.value = ''
-}
-
-function onClickOutside(event) {
-  if (!event.target.closest('#pokemon-dropdown')) {
-    open.value = false
-  }
+  search.value = p.displayName
+  dropdownOpen.value = false
 }
 
 function enviarRespuesta() {
-  if (!selected.value || sent.value) return
-  sent.value = true
+  if (!selected.value || alreadyAnswered.value) return
 
   const payload = { type: 'GUESS_POKEMON', pokemonId: selected.value.id }
 
@@ -65,6 +52,14 @@ function enviarRespuesta() {
   } else {
     sendAction(payload)
   }
+}
+
+function siguienteRonda() {
+  const random = Pokemons[Math.floor(Math.random() * Pokemons.length)]
+  gameStore.startRound(random)
+  broadcast({ type: 'STATE_UPDATE', state: gameStore.state })
+  selected.value = null
+  search.value = ''
 }
 
 function volverAlInicio() {
@@ -80,145 +75,216 @@ async function triggerBounce() {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center h-full gap-6" @click="onClickOutside">
-    <!-- Jugando -->
-    <div v-if="!finished" class="flex flex-col items-center gap-4 w-full max-w-[300px]">
-      <h2 class="text-xl font-bold text-center text-[#3c315b]">¿Quién es ese Pokémon?</h2>
+  <div class="flex flex-col items-center min-h-full">
+    <!-- ═══ JUGANDO ═══ -->
+    <template v-if="isPlaying">
+      <!-- Arriba: vacío -->
+      <div class="flex flex-wrap justify-center gap-1 max-w-80 px-2 pt-2">
+        <img
+          v-for="r in gameStore.totalRounds"
+          :key="r"
+          :src="
+            r < gameStore.round && gameStore.pokemons[r - 1]?.sprite
+              ? gameStore.pokemons[r - 1].sprite
+              : 'https://images.wikidexcdn.net/mwuploads/wikidex/4/48/latest/20080731164835/Unown_%3F_RZ.png'
+          "
+          alt=""
+          :class="[
+            'w-auto transition-all',
+            gameStore.totalRounds <= 5 ? 'h-14' : gameStore.totalRounds <= 10 ? 'h-10' : 'h-8',
+          ]"
+        />
+      </div>
+      <!-- Medio: dex entry + ronda -->
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 w-80">
+        <!-- <p class="text-sm text-zinc-400">
+          Ronda {{ gameStore.round }} / {{ gameStore.totalRounds }}
+        </p> -->
+        <h2 class="text-xl font-bold text-center text-white">¿Quién es ese Pokémon?</h2>
+        <p class="text-sm text-center italic text-zinc-300">{{ pokemon?.dexEntry }}</p>
 
-      <p class="text-xs text-[#3c315b]/50 text-center">
-        {{ gameStore.players.map((p) => p.name).join(' · ') }}
-      </p>
-
-      <!-- Entrada del Pokédex -->
-      <div class="w-full bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-4 py-4">
-        <p class="text-sm text-center italic leading-relaxed text-[#3c315b]/75">
-          {{ pokemon?.dexEntry }}
-        </p>
+        <!-- Ya respondió -->
+        <div v-if="alreadyAnswered" class="text-center">
+          <p class="font-bold text-white">¡Respuesta enviada!</p>
+          <p class="text-sm text-zinc-400">
+            Esperando al resto ({{ answeredCount }}/{{ gameStore.players.length }})...
+          </p>
+        </div>
       </div>
 
-      <!-- Ya respondió, esperando al resto -->
-      <div
-        v-if="alreadyAnswered"
-        class="w-full text-center bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-4 py-4"
-      >
-        <p class="font-bold text-[#3c315b]">¡Respuesta enviada!</p>
-        <p class="text-sm text-[#3c315b]/55 mt-1">
-          Esperando... ({{ answeredCount }}/{{ gameStore.players.length }})
-        </p>
-      </div>
+      <!-- Abajo: dropdown + botón -->
+      <div v-if="!alreadyAnswered" class="flex flex-col gap-3 w-80 pb-2">
+        <div class="relative w-full">
+          <input
+            v-model="search"
+            @focus="dropdownOpen = true"
+            @input="dropdownOpen = true"
+            placeholder="Buscar pokémon..."
+            class="w-full px-3 py-2 bg-zinc-900 border border-zinc-600 rounded-lg text-white placeholder-zinc-500 focus:outline-none focus:border-white"
+          />
 
-      <!-- Todavía puede responder -->
-      <template v-else>
-        <div id="pokemon-dropdown" class="relative w-full">
-          <button
-            @click.stop="toggleDropdown"
-            class="w-full flex items-center justify-between px-3 py-2.5 bg-white border border-[#c4b8f5] rounded-xl text-sm hover:border-[#7c6fd4] transition-all duration-200"
+          <!-- Dropdown (abre hacia arriba) -->
+          <div
+            v-if="dropdownOpen && filtered.length"
+            class="absolute z-10 bottom-full mb-1 w-full bg-zinc-900 border border-zinc-700 rounded-lg max-h-48 overflow-y-auto"
           >
-            <span :class="selected ? 'text-[#3c315b] font-medium' : 'text-[#3c315b]/40'">
-              {{ selected ? selected.displayName : 'Elegí un Pokémon...' }}
-            </span>
-            <svg
-              class="w-4 h-4 text-[#3c315b]/35 shrink-0"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <button
+              v-for="p in filtered"
+              :key="p.id"
+              @click="onSelect(p)"
+              :class="[
+                'w-full text-left px-3 py-2 hover:bg-zinc-800 transition text-sm',
+                selected?.id === p.id ? 'text-green-400' : 'text-white',
+              ]"
             >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M7 10l5 5 5-5"
-              />
-            </svg>
-          </button>
+              <div class="flex items-center gap-2">
+                <img class="w-8 h-8" :src="p.sprite" alt="" />
+                <span>{{ p.displayName }}</span>
+              </div>
+            </button>
+          </div>
 
           <div
-            v-if="open"
-            class="absolute z-50 mt-1 w-full bg-white border border-[#c4b8f5] rounded-xl shadow-lg shadow-[#3c315b]/10 overflow-hidden"
+            v-else-if="dropdownOpen && search && !filtered.length"
+            class="absolute z-10 bottom-full mb-1 w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-500"
           >
-            <input
-              id="pokemon-search"
-              v-model="search"
-              placeholder="Buscar pokémon..."
-              class="w-full px-3 py-2.5 border-b border-[#c4b8f5]/60 text-sm text-[#3c315b] placeholder:text-[#3c315b]/40 focus:outline-none"
-            />
-            <div class="max-h-48 overflow-y-auto">
-              <p
-                v-if="search && filtered.length === 0"
-                class="px-3 py-2.5 text-sm text-[#3c315b]/50"
-              >
-                No se encontró ningún Pokémon.
-              </p>
-              <button
-                v-for="p in filtered"
-                :key="p.id"
-                @click="onSelect(p)"
-                class="w-full flex items-center py-2.5 text-sm text-[#3c315b] hover:bg-[#e2dffe] transition-colors text-left gap-2"
-              >
-                <img :src="p.sprite" alt="" class="w-10 h-10" />
-                <span>
-                  {{ p.displayName }}
-                </span>
-                <svg
-                  v-if="selected?.id === p.id"
-                  class="ml-auto w-4 h-4 text-[#7c6fd4] shrink-0"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-              </button>
-            </div>
+            No se encontró ningún Pokémon.
           </div>
         </div>
 
         <button
           @click="enviarRespuesta"
           :disabled="!selected"
-          class="w-full px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100 disabled:shadow-none"
+          :class="[
+            'w-full px-4 py-2 rounded-lg font-medium transition',
+            selected
+              ? 'bg-white text-black hover:bg-zinc-200'
+              : 'bg-zinc-700 text-zinc-500 cursor-not-allowed',
+          ]"
         >
           Enviar respuesta
         </button>
-      </template>
-    </div>
+      </div>
+    </template>
 
-    <!-- Resultado -->
-    <div v-else class="flex flex-col items-center gap-4 text-center w-full max-w-[280px]">
-      <div
-        class="bg-white/70 border border-[#c4b8f5]/60 rounded-2xl px-6 py-6 w-full flex flex-col items-center gap-3"
-      >
+    <!-- ═══ RESULTADO DE RONDA ═══ -->
+    <template v-else-if="isRoundResult">
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 w-80 text-center">
+        <p class="text-sm text-zinc-400">
+          Ronda {{ gameStore.round }} / {{ gameStore.totalRounds }}
+        </p>
         <img
-          v-if="pokemon?.sprite"
-          :src="pokemon.sprite"
-          :class="['w-28 h-28 cursor-pointer drop-shadow-md', { bounce: bouncing }]"
+          v-if="gameStore.roundResult?.pokemon?.sprite"
+          :src="gameStore.roundResult.pokemon.sprite"
+          :class="['w-32 h-32 cursor-pointer', { bounce: bouncing }]"
           @click="triggerBounce"
           @touchstart.prevent="triggerBounce"
           @animationend="bouncing = false"
         />
-        <p class="text-lg font-bold text-[#3c315b]">{{ pokemon?.displayName }}</p>
+        <p class="text-lg font-bold text-white">
+          {{ gameStore.roundResult?.pokemon?.displayName }}
+        </p>
+
+        <p v-if="gameStore.roundResult?.correctPlayers?.length" class="text-green-400 font-bold">
+          ¡Acertaron: {{ gameStore.roundResult.correctPlayers.join(', ') }}!
+        </p>
+        <p v-else class="text-red-400 font-bold">¡Nadie adivinó!</p>
+
+        <!-- Scoreboard -->
+        <div class="w-full text-left">
+          <p class="text-sm text-zinc-400 mb-2">Puntuaciones:</p>
+          <div
+            v-for="p in scoreboard"
+            :key="p.id"
+            class="flex justify-between px-2 py-1 text-white"
+          >
+            <span>{{ p.name }}</span>
+            <span class="font-bold">{{ p.score }} pts</span>
+          </div>
+        </div>
+
+        <button
+          v-if="isHost"
+          @click="siguienteRonda"
+          class="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition mt-2"
+        >
+          Siguiente ronda
+        </button>
+        <p v-else class="text-sm text-zinc-400">Esperando al host...</p>
       </div>
+    </template>
 
-      <template v-if="winner">
+    <!-- ═══ FIN DEL JUEGO ═══ -->
+    <template v-else-if="isFinished">
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 w-80 text-center">
+        <img
+          v-if="gameStore.roundResult?.pokemon?.sprite"
+          :src="gameStore.roundResult.pokemon.sprite"
+          :class="['w-32 h-32 cursor-pointer', { bounce: bouncing }]"
+          @click="triggerBounce"
+          @touchstart.prevent="triggerBounce"
+          @animationend="bouncing = false"
+        />
+        <p class="text-lg font-bold text-white">
+          {{ gameStore.roundResult?.pokemon?.displayName }}
+        </p>
+
         <p class="text-4xl">🏆</p>
-        <h2 class="text-2xl font-bold text-[#3c315b]">{{ winner.name }} ganó!</h2>
-      </template>
-      <template v-else>
-        <p class="text-4xl">😵</p>
-        <h2 class="text-2xl font-bold text-[#3c315b]">¡Nadie adivinó!</h2>
-      </template>
+        <h2 class="text-2xl font-bold text-white">
+          {{
+            gameStore
+              .getWinners()
+              .map((w) => w.name)
+              .join(', ')
+          }}
+          {{ gameStore.getWinners().length > 1 ? 'empatan!' : 'gana!' }}
+        </h2>
 
-      <button
-        @click="volverAlInicio"
-        class="w-full mt-1 px-4 py-3 rounded-xl text-sm font-semibold bg-[#7c6fd4] text-white hover:bg-[#6558c0] active:scale-95 transition-all duration-200 shadow-sm shadow-[#7c6fd4]/30"
-      >
-        Volver al inicio
-      </button>
-    </div>
+        <!-- Scoreboard final -->
+        <div class="w-full text-left">
+          <p class="text-sm text-zinc-400 mb-2">Resultado final:</p>
+          <div
+            v-for="(p, i) in scoreboard"
+            :key="p.id"
+            class="flex justify-between px-2 py-1 text-white"
+          >
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-2">
+                <span v-if="i === 0">🥇 </span>
+                <span v-else-if="i === 1">🥈</span>
+                <span v-else-if="i === 2">🥉</span>
+                <img class="w-8 h-8 rounded-full" :src="p.avatar" alt="" />
+                <span>
+                  {{ p.name }}
+                </span>
+              </div>
+            </div>
+            <span class="font-bold">{{ p.score }} pts</span>
+          </div>
+        </div>
+
+        <button
+          @click="volverAlInicio"
+          class="w-full px-4 py-2 bg-white text-black rounded-lg font-medium hover:bg-zinc-200 transition mt-4"
+        >
+          Volver al inicio
+        </button>
+      </div>
+    </template>
   </div>
 </template>
+
+<style scoped>
+@keyframes pokemon-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+.bounce {
+  animation: pokemon-bounce 0.3s ease-in-out 3;
+}
+</style>

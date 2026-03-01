@@ -29,7 +29,7 @@ const router = createRouter({
       path: '/game',
       name: 'Juego',
       component: GameView,
-      meta: { bgColor: '#E2FFE9' },
+      meta: { bgColor: '#3c315b' },
     },
     // {
     //   path: '/about',
