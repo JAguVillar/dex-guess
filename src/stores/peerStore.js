@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
 import Peer from 'peerjs'
 
@@ -7,6 +7,20 @@ export const usePeerStore = defineStore('peer', () => {
   const myId = ref(null)
   const ready = ref(false)
   const isHost = ref(false)
+  const avatarId = ref(generateAvatarId())
+
+  function generateAvatarId() {
+    return String(Math.floor(Math.random() * 1025) + 1).padStart(4, '0')
+  }
+
+  const avatarUrl = computed(
+    () =>
+      `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/portrait/${avatarId.value}/Normal.png`,
+  )
+
+  function randomizeAvatar() {
+    avatarId.value = generateAvatarId()
+  }
 
   // Conexiones activas — viven acá para sobrevivir la navegación
   const connections = ref({}) // host: { [peerId]: DataConnection }
@@ -49,5 +63,17 @@ export const usePeerStore = defineStore('peer', () => {
     clientConn.value = null
   }
 
-  return { peer, myId, ready, isHost, connections, clientConn, init, destroy }
+  return {
+    peer,
+    myId,
+    ready,
+    isHost,
+    avatarId,
+    avatarUrl,
+    randomizeAvatar,
+    connections,
+    clientConn,
+    init,
+    destroy,
+  }
 })
