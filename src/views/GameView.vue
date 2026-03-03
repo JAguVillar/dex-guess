@@ -64,6 +64,7 @@ function siguienteRonda() {
 
 function volverAlInicio() {
   gameStore.$reset()
+  peerStore.destroy()
   router.push('/')
 }
 

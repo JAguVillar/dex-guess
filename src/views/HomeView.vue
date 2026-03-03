@@ -125,6 +125,8 @@ function onOtpPaste(event) {
           :key="i"
           :ref="(el) => (inputs[i - 1] = el)"
           type="text"
+          inputmode="numeric"
+          pattern="[0-9]*"
           maxlength="1"
           class="w-12 h-12 text-center text-lg font-mono font-bold rounded-xl border-2 uppercase transition-all duration-200 focus:outline-none focus:border-[#FF6B6B]"
           :style="{
@@ -132,7 +134,6 @@ function onOtpPaste(event) {
             color: 'var(--text-primary)',
             borderColor: 'var(--border)',
           }"
-          inputmode="text"
           @input="onOtpInput(i - 1, $event)"
           @keydown="onOtpKeydown(i - 1, $event)"
         />
